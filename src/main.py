@@ -1,9 +1,12 @@
 import pyttsx3
 import PyPDF2
 import tkinter as tk
+import threading
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 from tkinter import scrolledtext
+from tkinter import messagebox
+
 
 class PDFReaderApp:
     def __init__(self, root):
@@ -95,7 +98,7 @@ class PDFReaderApp:
         # Set default voice (usually index 0 is male, 1 is female)
         if len(voice_names) > 0:
             self.voice_combo.set(voice_names[0])
-            
+
     def open_pdf(self):
         file_path = askopenfilename(filetypes=[("PDF files", "*.pdf")])
         if file_path:
@@ -116,9 +119,59 @@ class PDFReaderApp:
 
     def read_text(self):
         if self.pdf_text:
-            player = pyttsx3.init()
-            player.say(self.pdf_text)
-            player.runAndWait()
+            try:
+                # Create a stop button when reading starts
+                self.stop_btn = ttk.Button(self.btn_frame, text="Stop Reading", command=self.stop_reading)
+                self.stop_btn.grid(row=0, column=2, padx=10)
+                self.read_btn.config(state='disabled')  # Disable read button while reading
+                
+                # Start reading in a separate thread
+                self.reading_thread = threading.Thread(target=self.read_in_thread)
+                self.reading_thread.daemon = True  # Thread will be terminated when main program exits
+                self.reading_thread.start()
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"Error reading text: {str(e)}")
+                self.reset_buttons()
+
+    def read_in_thread(self):
+        try:
+            # Get selected voice
+            selected_voice = self.voice_combo.get()
+            selected_voice_obj = next(
+                (voice for voice in self.voices if voice.name == selected_voice),
+                self.voices[0]
+            )
+            
+            # Configure engine properties
+            self.engine.setProperty('voice', selected_voice_obj.id)
+            self.engine.setProperty('rate', self.speed_var.get())
+            self.engine.setProperty('volume', 0.9)
+            
+            # Get selected text or all text
+            selected_text = self.text_area.get(tk.SEL_FIRST, tk.SEL_LAST) if self.text_area.tag_ranges(tk.SEL) else self.pdf_text
+            
+            # Read the text
+            self.engine.say(selected_text)
+            self.engine.runAndWait()
+            
+        except Exception as e:
+            # Use after() to schedule GUI updates from the thread
+            self.root.after(0, lambda: messagebox.showerror("Error", f"Error reading text: {str(e)}"))
+        finally:
+            # Reset buttons when done
+            self.root.after(0, self.reset_buttons)
+
+    def stop_reading(self):
+        if hasattr(self, 'engine'):
+            self.engine.stop()
+        self.reset_buttons()
+
+    def reset_buttons(self):
+        # Remove stop button and re-enable read button
+        if hasattr(self, 'stop_btn'):
+            self.stop_btn.grid_remove()
+        self.read_btn.config(state='normal')
 
 def main():
     root = tk.Tk()
