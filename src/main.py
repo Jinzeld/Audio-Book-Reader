@@ -9,25 +9,48 @@ class PDFReaderApp:
     def __init__(self, root):
         self.root = root
         self.root.title("PDF Reader")
-        self.root.geometry("800x600")
+        self.root.geometry("900x700")  # Increased window size
         
-        # Create main frame
-        self.main_frame = ttk.Frame(root, padding="10")
+        # Configure style
+        style = ttk.Style()
+        style.configure("TButton", padding=6, font=('Helvetica', 10))
+        style.configure("TFrame", background="#f0f0f0")
+        
+        # Create main frame with better padding
+        self.main_frame = ttk.Frame(root, padding="20")
         self.main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
-        # Buttons
+        # Configure grid weights for better resizing
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        
+        # Buttons with improved layout
         self.btn_frame = ttk.Frame(self.main_frame)
-        self.btn_frame.grid(row=0, column=0, columnspan=2, pady=5)
+        self.btn_frame.grid(row=0, column=0, columnspan=2, pady=10)
         
         self.open_btn = ttk.Button(self.btn_frame, text="Open PDF", command=self.open_pdf)
-        self.open_btn.grid(row=0, column=0, padx=5)
+        self.open_btn.grid(row=0, column=0, padx=10)
         
         self.read_btn = ttk.Button(self.btn_frame, text="Read Aloud", command=self.read_text)
-        self.read_btn.grid(row=0, column=1, padx=5)
+        self.read_btn.grid(row=0, column=1, padx=10)
         
-        # Text area for PDF content
-        self.text_area = scrolledtext.ScrolledText(self.main_frame, width=70, height=30)
-        self.text_area.grid(row=1, column=0, columnspan=2, pady=5)
+        # Text area with improved formatting
+        self.text_area = scrolledtext.ScrolledText(
+            self.main_frame,
+            width=80,
+            height=35,
+            wrap=tk.WORD,
+            font=('Helvetica', 11),
+            padx=10,
+            pady=10,
+            background="#2E2E2E",  # Dark gray background
+            foreground="#FFFFFF"    # White text
+        )
+        self.text_area.grid(row=1, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        # Configure text area grid weights
+        self.main_frame.grid_rowconfigure(1, weight=1)
+        self.main_frame.grid_columnconfigure(0, weight=1)
         
         self.current_pdf = None
         self.pdf_text = ""
@@ -39,7 +62,11 @@ class PDFReaderApp:
                 self.current_pdf = PyPDF2.PdfReader(file_path)
                 self.pdf_text = ""
                 for page in self.current_pdf.pages:
-                    self.pdf_text += page.extract_text()
+                    text = page.extract_text()
+                    # Improve text formatting
+                    text = ' '.join(text.split())  # Remove extra whitespace and preserve single spaces
+                    text = text.replace('. ', '.\n\n')  # Add paragraph breaks after sentences
+                    self.pdf_text += text
                 self.text_area.delete(1.0, tk.END)
                 self.text_area.insert(tk.END, self.pdf_text)
             except Exception as e:
