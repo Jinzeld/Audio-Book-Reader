@@ -54,7 +54,48 @@ class PDFReaderApp:
         
         self.current_pdf = None
         self.pdf_text = ""
+        # Add voice selection frame
+        self.voice_frame = ttk.Frame(self.main_frame)
+        self.voice_frame.grid(row=2, column=0, columnspan=2, pady=10)
 
+        # Voice selection dropdown
+        self.voice_label = ttk.Label(self.voice_frame, text="Select Voice:")
+        self.voice_label.grid(row=0, column=0, padx=5)
+
+        self.voice_var = tk.StringVar()
+        self.voice_combo = ttk.Combobox(self.voice_frame, textvariable=self.voice_var)
+        self.voice_combo.grid(row=0, column=1, padx=5)
+        
+        # Speed control
+        self.speed_label = ttk.Label(self.voice_frame, text="Speed:")
+        self.speed_label.grid(row=0, column=2, padx=5)
+        
+        self.speed_var = tk.DoubleVar(value=175)  # Default speed
+        self.speed_scale = ttk.Scale(
+            self.voice_frame, 
+            from_=100, 
+            to=250, 
+            variable=self.speed_var, 
+            orient='horizontal'
+        )
+        self.speed_scale.grid(row=0, column=3, padx=5)
+
+        # Initialize text-to-speech engine
+        self.engine = pyttsx3.init()
+        self.update_voice_list()
+
+    def update_voice_list(self):
+        # Get available voices
+        voices = self.engine.getProperty('voices')
+        self.voices = voices
+        # Update combobox with voice names
+        voice_names = [voice.name for voice in voices]
+        self.voice_combo['values'] = voice_names
+        
+        # Set default voice (usually index 0 is male, 1 is female)
+        if len(voice_names) > 0:
+            self.voice_combo.set(voice_names[0])
+            
     def open_pdf(self):
         file_path = askopenfilename(filetypes=[("PDF files", "*.pdf")])
         if file_path:
